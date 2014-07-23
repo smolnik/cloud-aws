@@ -5,7 +5,11 @@ import java.util.Map;
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import net.adamsmolnik.entity.FileEntity;
+import net.adamsmolnik.entity.Entity;
+import net.adamsmolnik.entity.EntityDetails;
+import net.adamsmolnik.entity.EntityReference;
+import net.adamsmolnik.entity.EntityReferenceDest;
+import net.adamsmolnik.entity.EntityReferenceSource;
 import net.adamsmolnik.provider.EntityProvider;
 import net.adamsmolnik.util.Configuration;
 import net.adamsmolnik.util.ConfigurationKeys;
@@ -33,12 +37,22 @@ public class S3EntityProvider implements EntityProvider {
     }
 
     @Override
-    public FileEntity getFileEntity(String objectKey) {
-        S3Object s3Object = s3Client.getObject(conf.getGlobalValue(ConfigurationKeys.BUCKET_NAME.getKey()), objectKey);
+    public Entity getEntity(EntityReference er) {
+        S3Object s3Object = s3Client.getObject(conf.getGlobalValue(ConfigurationKeys.BUCKET_NAME.getKey()), er.getEntityReferenceKey());
         Map<String, String> metadataMap = new HashMap<>();
         ObjectMetadata s3ObjectMetadata = s3Object.getObjectMetadata();
         metadataMap.put("contentLength", String.valueOf(s3ObjectMetadata.getContentLength()));
-        return new FileEntity(s3Object.getObjectContent(), metadataMap);
+        return new Entity(s3Object.getObjectContent(), metadataMap);
+    }
+
+    @Override
+    public EntityDetails copy(EntityReferenceSource ers, EntityReferenceDest erd) {
+        return null;
+    }
+
+    @Override
+    public EntityDetails move(EntityReferenceSource ers, EntityReferenceDest erd) {
+        return null;
     }
 
 }

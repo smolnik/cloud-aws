@@ -42,7 +42,7 @@ public class SwfActivityLauncher implements ActivityLauncher {
                 .getKey()), conf.getGlobalValue(ConfigurationKeys.SECRET_KEY.getKey())), config);
         service.setEndpoint(confMap.get("swf.endpoint"));
         String domain = confMap.get("swf.domain");
-        String taskListToPoll = "digestTasks";
+        String taskListToPoll = confMap.get("swf.tasks");
         aw = new ActivityWorker(service, domain, taskListToPoll);
     }
 
