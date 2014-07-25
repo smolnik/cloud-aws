@@ -89,7 +89,7 @@ public class S3Configuration implements Configuration {
     }
 
     @Override
-    public Map<String, String> getServiceMap(String serviceName) {
+    public Map<String, String> getServiceConfMap(String serviceName) {
         return servicesConfMap.get(serviceName);
     }
 

@@ -36,7 +36,7 @@ public class SwfActivityLauncher implements ActivityLauncher {
 
     @PostConstruct
     private void init() {
-        Map<String, String> confMap = conf.getServiceMap(snr.getServiceName());
+        Map<String, String> confMap = conf.getServiceConfMap(snr.getServiceName());
         ClientConfiguration config = new ClientConfiguration().withSocketTimeout(Integer.valueOf(confMap.get("swf.socketTimeout")));
         AmazonSimpleWorkflow service = new AmazonSimpleWorkflowClient(new BasicAWSCredentials(conf.getGlobalValue(ConfigurationKeys.ACCESS_KEY_ID
                 .getKey()), conf.getGlobalValue(ConfigurationKeys.SECRET_KEY.getKey())), config);

@@ -1,4 +1,4 @@
-package net.adamsmolnik.entity.aws;
+package net.adamsmolnik.provider.aws;
 
 import java.util.HashMap;
 import java.util.Map;
