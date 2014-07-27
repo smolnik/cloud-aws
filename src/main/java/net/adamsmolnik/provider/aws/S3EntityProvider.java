@@ -1,5 +1,6 @@
 package net.adamsmolnik.provider.aws;
 
+import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
 import javax.annotation.PostConstruct;
@@ -30,15 +31,18 @@ public class S3EntityProvider implements EntityProvider {
 
     private AmazonS3Client s3Client;
 
+    private String bucketName;
+
     @PostConstruct
     private void init() {
         s3Client = new AmazonS3Client(new BasicAWSCredentials(conf.getGlobalValue(ConfigurationKeys.ACCESS_KEY_ID.getKey()),
                 conf.getGlobalValue(ConfigurationKeys.SECRET_KEY.getKey())));
+        bucketName = conf.getGlobalValue(ConfigurationKeys.BUCKET_NAME.getKey());
     }
 
     @Override
     public Entity getEntity(EntityReference er) {
-        S3Object s3Object = s3Client.getObject(conf.getGlobalValue(ConfigurationKeys.BUCKET_NAME.getKey()), er.getEntityReferenceKey());
+        S3Object s3Object = s3Client.getObject(bucketName, er.getEntityReferenceKey());
         Map<String, String> metadataMap = new HashMap<>();
         ObjectMetadata s3ObjectMetadata = s3Object.getObjectMetadata();
         metadataMap.put("contentLength", String.valueOf(s3ObjectMetadata.getContentLength()));
@@ -53,6 +57,13 @@ public class S3EntityProvider implements EntityProvider {
     @Override
     public EntityDetails move(EntityReferenceSource ers, EntityReferenceDest erd) {
         return null;
+    }
+
+    @Override
+    public void save(EntityReference entityReference, long size, InputStream is) {
+        ObjectMetadata om = new ObjectMetadata();
+        om.setContentLength(size);
+        s3Client.putObject(bucketName, entityReference.getEntityReferenceKey(), is, om);
     }
 
 }
