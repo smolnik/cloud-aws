@@ -16,6 +16,7 @@ import net.adamsmolnik.util.Configuration;
 import net.adamsmolnik.util.ConfigurationKeys;
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.services.s3.AmazonS3Client;
+import com.amazonaws.services.s3.model.CopyObjectResult;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.S3Object;
 
@@ -51,12 +52,20 @@ public class S3EntityProvider implements EntityProvider {
 
     @Override
     public EntityDetails copy(EntityReferenceSource ers, EntityReferenceDest erd) {
-        return null;
+        CopyObjectResult response = doCopy(ers, erd);
+        return new EntityDetails(erd, response.getVersionId(), response.getETag());
+    }
+
+    private CopyObjectResult doCopy(EntityReferenceSource ers, EntityReferenceDest erd) {
+        CopyObjectResult response = s3Client.copyObject(bucketName, ers.getEntityReferenceKey(), bucketName, erd.getEntityReferenceKey());
+        return response;
     }
 
     @Override
     public EntityDetails move(EntityReferenceSource ers, EntityReferenceDest erd) {
-        return null;
+        CopyObjectResult response = doCopy(ers, erd);
+        s3Client.deleteObject(bucketName, ers.getEntityReferenceKey());
+        return new EntityDetails(erd, response.getVersionId(), response.getETag());
     }
 
     @Override

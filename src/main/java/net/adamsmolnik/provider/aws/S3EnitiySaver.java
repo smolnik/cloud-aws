@@ -8,10 +8,10 @@ import net.adamsmolnik.provider.EntityProvider;
 import net.adamsmolnik.provider.EntitySaver;
 
 @Singleton
-public class S3EnitiySaver implements EntitySaver{
-    
+public class S3EnitiySaver implements EntitySaver {
+
     @Inject
-    private EntityProvider entityProvider; 
+    private EntityProvider entityProvider;
 
     @Override
     public void save(EntityReference entityReference, long size, InputStream is) {
