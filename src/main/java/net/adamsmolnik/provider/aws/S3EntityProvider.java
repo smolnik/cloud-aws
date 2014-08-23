@@ -16,6 +16,7 @@ import net.adamsmolnik.util.Configuration;
 import net.adamsmolnik.util.ConfigurationKeys;
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.services.s3.AmazonS3Client;
+import com.amazonaws.services.s3.model.CopyObjectRequest;
 import com.amazonaws.services.s3.model.CopyObjectResult;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.S3Object;
@@ -36,8 +37,8 @@ public class S3EntityProvider implements EntityProvider {
 
     @PostConstruct
     private void init() {
-        s3Client = new AmazonS3Client(new BasicAWSCredentials(conf.getGlobalValue(ConfigurationKeys.ACCESS_KEY_ID.getKey()),
-                conf.getGlobalValue(ConfigurationKeys.SECRET_KEY.getKey())));
+        s3Client = conf.isSystemCredentialsExist() ? new AmazonS3Client(new BasicAWSCredentials(conf.getGlobalValue(ConfigurationKeys.ACCESS_KEY_ID
+                .getKey()), conf.getGlobalValue(ConfigurationKeys.SECRET_KEY.getKey()))) : new AmazonS3Client();
         bucketName = conf.getGlobalValue(ConfigurationKeys.BUCKET_NAME.getKey());
     }
 
@@ -69,10 +70,20 @@ public class S3EntityProvider implements EntityProvider {
     }
 
     @Override
-    public void save(EntityReference entityReference, long size, InputStream is) {
+    public void persist(EntityReference entityReference, long size, InputStream is) {
         ObjectMetadata om = new ObjectMetadata();
         om.setContentLength(size);
         s3Client.putObject(bucketName, entityReference.getEntityReferenceKey(), is, om);
+    }
+
+    @Override
+    public void setNewMetadata(EntityReference entityReference, String key, String value) {
+        String objectKey = entityReference.getEntityReferenceKey();
+        CopyObjectRequest cor = new CopyObjectRequest(bucketName, objectKey, bucketName, objectKey);
+        ObjectMetadata omd = new ObjectMetadata();
+        omd.addUserMetadata(key, value);
+        cor.setNewObjectMetadata(omd);
+        s3Client.copyObject(cor);
     }
 
 }

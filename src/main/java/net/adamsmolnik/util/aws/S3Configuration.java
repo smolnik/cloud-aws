@@ -37,18 +37,25 @@ public class S3Configuration implements Configuration {
 
     private Map<String, Map<String, String>> servicesConfMap = new HashMap<>();
 
+    private final boolean systemCredentialsExist;
+
     public S3Configuration() {
         String accessKeyIdValue = System.getProperty("AWS_ACCESS_KEY_ID");
-        globalConfMap.put(ConfigurationKeys.ACCESS_KEY_ID.getKey(), accessKeyIdValue);
         String secretKeyValue = System.getProperty("AWS_SECRET_KEY");
+        globalConfMap.put(ConfigurationKeys.ACCESS_KEY_ID.getKey(), accessKeyIdValue);
         globalConfMap.put(ConfigurationKeys.SECRET_KEY.getKey(), secretKeyValue);
-
+        systemCredentialsExist = !isEmpty(accessKeyIdValue) && !isEmpty(secretKeyValue);
         init(accessKeyIdValue, secretKeyValue);
     }
 
     private void init(String accessKeyIdValue, String secretKeyValue) {
-        AWSCredentials credentials = new BasicAWSCredentials(accessKeyIdValue, secretKeyValue);
-        AmazonS3Client s3Client = new AmazonS3Client(credentials);
+        final AmazonS3Client s3Client;
+        if (systemCredentialsExist) {
+            AWSCredentials credentials = new BasicAWSCredentials(accessKeyIdValue, secretKeyValue);
+            s3Client = new AmazonS3Client(credentials);
+        } else {
+            s3Client = new AmazonS3Client();
+        }
         S3Object s3Object = s3Client.getObject(BUCKET_NAME, "conf/global.properties");
         fillConfMap(s3Object, globalConfMap);
         ObjectListing s3Objects = s3Client.listObjects(BUCKET_NAME, "conf/services");
@@ -94,8 +101,18 @@ public class S3Configuration implements Configuration {
     }
 
     @Override
+    public boolean isSystemCredentialsExist() {
+        return systemCredentialsExist;
+    }
+
+    private boolean isEmpty(String s) {
+        return s == null || s.trim().isEmpty();
+    }
+
+    @Override
     public String toString() {
-        return "globalMap=" + globalConfMap + ", servicesMap=" + servicesConfMap;
+        return "S3Configuration [globalConfMap=" + globalConfMap + ", servicesConfMap=" + servicesConfMap + ", systemCredentialsExist="
+                + systemCredentialsExist + "]";
     }
 
 }

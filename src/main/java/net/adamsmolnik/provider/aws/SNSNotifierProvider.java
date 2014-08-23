@@ -35,8 +35,8 @@ public class SNSNotifierProvider implements NotifierProvider {
     @PostConstruct
     public void init() {
         Map<String, String> confMap = conf.getServiceConfMap(snr.getServiceName());
-        snsClient = new AmazonSNSClient(new BasicAWSCredentials(conf.getGlobalValue(ConfigurationKeys.ACCESS_KEY_ID.getKey()),
-                conf.getGlobalValue(ConfigurationKeys.SECRET_KEY.getKey())));
+        snsClient = conf.isSystemCredentialsExist() ? new AmazonSNSClient(new BasicAWSCredentials(conf.getGlobalValue(ConfigurationKeys.ACCESS_KEY_ID
+                .getKey()), conf.getGlobalValue(ConfigurationKeys.SECRET_KEY.getKey()))) : new AmazonSNSClient();
         snsClient.setRegion(Region.getRegion(Regions.US_EAST_1));
         CreateTopicRequest createTopicRequest = new CreateTopicRequest(confMap.get("sns.topic"));
         CreateTopicResult createTopicResult = snsClient.createTopic(createTopicRequest);

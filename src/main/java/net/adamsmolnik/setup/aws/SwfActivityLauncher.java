@@ -38,8 +38,9 @@ public class SwfActivityLauncher implements ActivityLauncher {
     private void init() {
         Map<String, String> confMap = conf.getServiceConfMap(snr.getServiceName());
         ClientConfiguration config = new ClientConfiguration().withSocketTimeout(Integer.valueOf(confMap.get("swf.socketTimeout")));
-        AmazonSimpleWorkflow service = new AmazonSimpleWorkflowClient(new BasicAWSCredentials(conf.getGlobalValue(ConfigurationKeys.ACCESS_KEY_ID
-                .getKey()), conf.getGlobalValue(ConfigurationKeys.SECRET_KEY.getKey())), config);
+        AmazonSimpleWorkflow service = conf.isSystemCredentialsExist() ? new AmazonSimpleWorkflowClient(new BasicAWSCredentials(
+                conf.getGlobalValue(ConfigurationKeys.ACCESS_KEY_ID.getKey()), conf.getGlobalValue(ConfigurationKeys.SECRET_KEY.getKey())), config)
+                : new AmazonSimpleWorkflowClient(config);
         service.setEndpoint(confMap.get("swf.endpoint"));
         String domain = confMap.get("swf.domain");
         String taskListToPoll = confMap.get("swf.tasks");

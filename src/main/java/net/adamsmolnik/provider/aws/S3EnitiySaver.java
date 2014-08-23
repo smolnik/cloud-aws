@@ -15,7 +15,7 @@ public class S3EnitiySaver implements EntitySaver {
 
     @Override
     public void save(EntityReference entityReference, long size, InputStream is) {
-        entityProvider.save(entityReference, size, is);
+        entityProvider.persist(entityReference, size, is);
     }
 
 }
