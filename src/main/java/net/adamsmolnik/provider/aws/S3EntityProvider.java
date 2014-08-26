@@ -7,14 +7,12 @@ import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import net.adamsmolnik.entity.Entity;
-import net.adamsmolnik.entity.EntityDetails;
 import net.adamsmolnik.entity.EntityReference;
 import net.adamsmolnik.entity.EntityReferenceDest;
 import net.adamsmolnik.entity.EntityReferenceSource;
+import net.adamsmolnik.entity.OperationDetails;
 import net.adamsmolnik.provider.EntityProvider;
 import net.adamsmolnik.util.Configuration;
-import net.adamsmolnik.util.ConfigurationKeys;
-import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.CopyObjectRequest;
 import com.amazonaws.services.s3.model.CopyObjectResult;
@@ -37,24 +35,20 @@ public class S3EntityProvider implements EntityProvider {
 
     @PostConstruct
     private void init() {
-        s3Client = conf.isSystemCredentialsExist() ? new AmazonS3Client(new BasicAWSCredentials(conf.getGlobalValue(ConfigurationKeys.ACCESS_KEY_ID
-                .getKey()), conf.getGlobalValue(ConfigurationKeys.SECRET_KEY.getKey()))) : new AmazonS3Client();
-        bucketName = conf.getGlobalValue(ConfigurationKeys.BUCKET_NAME.getKey());
+        s3Client = new AmazonS3Client();
+        bucketName = conf.getGlobalValue("bucketName");
     }
 
     @Override
     public Entity getEntity(EntityReference er) {
         S3Object s3Object = s3Client.getObject(bucketName, er.getEntityReferenceKey());
-        Map<String, String> metadataMap = new HashMap<>();
-        ObjectMetadata s3ObjectMetadata = s3Object.getObjectMetadata();
-        metadataMap.put("contentLength", String.valueOf(s3ObjectMetadata.getContentLength()));
-        return new Entity(s3Object.getObjectContent(), metadataMap);
+        return new Entity(s3Object.getObjectContent(), doGetMetadata(s3Object.getObjectMetadata(), er));
     }
 
     @Override
-    public EntityDetails copy(EntityReferenceSource ers, EntityReferenceDest erd) {
+    public OperationDetails copy(EntityReferenceSource ers, EntityReferenceDest erd) {
         CopyObjectResult response = doCopy(ers, erd);
-        return new EntityDetails(erd, response.getVersionId(), response.getETag());
+        return new OperationDetails(erd, response.getVersionId(), response.getETag());
     }
 
     private CopyObjectResult doCopy(EntityReferenceSource ers, EntityReferenceDest erd) {
@@ -63,27 +57,43 @@ public class S3EntityProvider implements EntityProvider {
     }
 
     @Override
-    public EntityDetails move(EntityReferenceSource ers, EntityReferenceDest erd) {
-        CopyObjectResult response = doCopy(ers, erd);
-        s3Client.deleteObject(bucketName, ers.getEntityReferenceKey());
-        return new EntityDetails(erd, response.getVersionId(), response.getETag());
-    }
-
-    @Override
-    public void persist(EntityReference entityReference, long size, InputStream is) {
+    public void persist(EntityReference er, long size, InputStream is) {
         ObjectMetadata om = new ObjectMetadata();
         om.setContentLength(size);
-        s3Client.putObject(bucketName, entityReference.getEntityReferenceKey(), is, om);
+        s3Client.putObject(bucketName, er.getEntityReferenceKey(), is, om);
     }
 
     @Override
-    public void setNewMetadata(EntityReference entityReference, String key, String value) {
-        String objectKey = entityReference.getEntityReferenceKey();
+    public void delete(EntityReference er) {
+        s3Client.deleteObject(bucketName, er.getEntityReferenceKey());
+
+    }
+
+    @Override
+    public void setNewMetadata(EntityReference er, Map<String, String> metadata) {
+        String objectKey = er.getEntityReferenceKey();
         CopyObjectRequest cor = new CopyObjectRequest(bucketName, objectKey, bucketName, objectKey);
-        ObjectMetadata omd = new ObjectMetadata();
-        omd.addUserMetadata(key, value);
+        ObjectMetadata omd = s3Client.getObjectMetadata(bucketName, er.getEntityReferenceKey());
+        omd.setUserMetadata(metadata);
         cor.setNewObjectMetadata(omd);
         s3Client.copyObject(cor);
+    }
+
+    private Map<String, String> doGetMetadata(ObjectMetadata omd, EntityReference er) {
+        Map<String, String> metadataMap = new HashMap<>();
+        metadataMap.put("contentLength", String.valueOf(omd.getContentLength()));
+        metadataMap.putAll(omd.getUserMetadata());
+        return metadataMap;
+    }
+
+    private Map<String, String> doGetMetadata(EntityReference er) {
+        ObjectMetadata omd = s3Client.getObjectMetadata(bucketName, er.getEntityReferenceKey());
+        return doGetMetadata(omd, er);
+    }
+
+    @Override
+    public Map<String, String> getMetadata(EntityReference er) {
+        return doGetMetadata(er);
     }
 
 }

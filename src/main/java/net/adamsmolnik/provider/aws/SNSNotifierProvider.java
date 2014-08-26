@@ -8,8 +8,6 @@ import javax.inject.Singleton;
 import net.adamsmolnik.provider.NotifierProvider;
 import net.adamsmolnik.setup.ServiceNameResolver;
 import net.adamsmolnik.util.Configuration;
-import net.adamsmolnik.util.ConfigurationKeys;
-import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.regions.Region;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.sns.AmazonSNSClient;
@@ -35,8 +33,7 @@ public class SNSNotifierProvider implements NotifierProvider {
     @PostConstruct
     public void init() {
         Map<String, String> confMap = conf.getServiceConfMap(snr.getServiceName());
-        snsClient = conf.isSystemCredentialsExist() ? new AmazonSNSClient(new BasicAWSCredentials(conf.getGlobalValue(ConfigurationKeys.ACCESS_KEY_ID
-                .getKey()), conf.getGlobalValue(ConfigurationKeys.SECRET_KEY.getKey()))) : new AmazonSNSClient();
+        snsClient = new AmazonSNSClient();
         snsClient.setRegion(Region.getRegion(Regions.US_EAST_1));
         CreateTopicRequest createTopicRequest = new CreateTopicRequest(confMap.get("sns.topic"));
         CreateTopicResult createTopicResult = snsClient.createTopic(createTopicRequest);

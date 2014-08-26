@@ -12,9 +12,6 @@ import java.util.regex.Pattern;
 import javax.inject.Singleton;
 import net.adamsmolnik.exceptions.ServiceException;
 import net.adamsmolnik.util.Configuration;
-import net.adamsmolnik.util.ConfigurationKeys;
-import com.amazonaws.auth.AWSCredentials;
-import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.ObjectListing;
 import com.amazonaws.services.s3.model.S3Object;
@@ -37,25 +34,8 @@ public class S3Configuration implements Configuration {
 
     private Map<String, Map<String, String>> servicesConfMap = new HashMap<>();
 
-    private final boolean systemCredentialsExist;
-
     public S3Configuration() {
-        String accessKeyIdValue = System.getProperty("AWS_ACCESS_KEY_ID");
-        String secretKeyValue = System.getProperty("AWS_SECRET_KEY");
-        globalConfMap.put(ConfigurationKeys.ACCESS_KEY_ID.getKey(), accessKeyIdValue);
-        globalConfMap.put(ConfigurationKeys.SECRET_KEY.getKey(), secretKeyValue);
-        systemCredentialsExist = !isEmpty(accessKeyIdValue) && !isEmpty(secretKeyValue);
-        init(accessKeyIdValue, secretKeyValue);
-    }
-
-    private void init(String accessKeyIdValue, String secretKeyValue) {
-        final AmazonS3Client s3Client;
-        if (systemCredentialsExist) {
-            AWSCredentials credentials = new BasicAWSCredentials(accessKeyIdValue, secretKeyValue);
-            s3Client = new AmazonS3Client(credentials);
-        } else {
-            s3Client = new AmazonS3Client();
-        }
+        final AmazonS3Client s3Client = new AmazonS3Client();
         S3Object s3Object = s3Client.getObject(BUCKET_NAME, "conf/global.properties");
         fillConfMap(s3Object, globalConfMap);
         ObjectListing s3Objects = s3Client.listObjects(BUCKET_NAME, "conf/services");
@@ -98,21 +78,6 @@ public class S3Configuration implements Configuration {
     @Override
     public Map<String, String> getServiceConfMap(String serviceName) {
         return servicesConfMap.get(serviceName);
-    }
-
-    @Override
-    public boolean isSystemCredentialsExist() {
-        return systemCredentialsExist;
-    }
-
-    private boolean isEmpty(String s) {
-        return s == null || s.trim().isEmpty();
-    }
-
-    @Override
-    public String toString() {
-        return "S3Configuration [globalConfMap=" + globalConfMap + ", servicesConfMap=" + servicesConfMap + ", systemCredentialsExist="
-                + systemCredentialsExist + "]";
     }
 
 }

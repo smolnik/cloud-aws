@@ -10,9 +10,7 @@ import net.adamsmolnik.exceptions.ServiceException;
 import net.adamsmolnik.setup.ActivityLauncher;
 import net.adamsmolnik.setup.ServiceNameResolver;
 import net.adamsmolnik.util.Configuration;
-import net.adamsmolnik.util.ConfigurationKeys;
 import com.amazonaws.ClientConfiguration;
-import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.services.simpleworkflow.AmazonSimpleWorkflow;
 import com.amazonaws.services.simpleworkflow.AmazonSimpleWorkflowClient;
 import com.amazonaws.services.simpleworkflow.flow.ActivityWorker;
@@ -38,9 +36,7 @@ public class SwfActivityLauncher implements ActivityLauncher {
     private void init() {
         Map<String, String> confMap = conf.getServiceConfMap(snr.getServiceName());
         ClientConfiguration config = new ClientConfiguration().withSocketTimeout(Integer.valueOf(confMap.get("swf.socketTimeout")));
-        AmazonSimpleWorkflow service = conf.isSystemCredentialsExist() ? new AmazonSimpleWorkflowClient(new BasicAWSCredentials(
-                conf.getGlobalValue(ConfigurationKeys.ACCESS_KEY_ID.getKey()), conf.getGlobalValue(ConfigurationKeys.SECRET_KEY.getKey())), config)
-                : new AmazonSimpleWorkflowClient(config);
+        AmazonSimpleWorkflow service = new AmazonSimpleWorkflowClient(config);
         service.setEndpoint(confMap.get("swf.endpoint"));
         String domain = confMap.get("swf.domain");
         String taskListToPoll = confMap.get("swf.tasks");
