@@ -37,7 +37,7 @@ public class S3Configuration implements Configuration {
     private final Map<String, Map<String, String>> servicesConfMap = new HashMap<>();
 
     @PostConstruct
-    public void init() {
+    private void init() {
         InputStream is = Thread.currentThread().getContextClassLoader().getResourceAsStream("bootstrap.properties");
         fillConfMap(is, localConfMap);
         String bucketName = localConfMap.get("bucketName");
