@@ -6,7 +6,6 @@ import javax.annotation.PreDestroy;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import net.adamsmolnik.provider.NotifierProvider;
-import net.adamsmolnik.setup.ServiceNameResolver;
 import net.adamsmolnik.util.Configuration;
 import com.amazonaws.regions.Region;
 import com.amazonaws.regions.Regions;
@@ -21,9 +20,6 @@ import com.amazonaws.services.sns.model.SubscribeRequest;
 public class SNSNotifierProvider implements NotifierProvider {
 
     @Inject
-    private ServiceNameResolver snr;
-
-    @Inject
     private Configuration conf;
 
     private AmazonSNSClient snsClient;
@@ -32,7 +28,7 @@ public class SNSNotifierProvider implements NotifierProvider {
 
     @PostConstruct
     public void init() {
-        Map<String, String> confMap = conf.getServiceConfMap(snr.getServiceName());
+        Map<String, String> confMap = conf.getServiceConfMap();
         snsClient = new AmazonSNSClient();
         snsClient.setRegion(Region.getRegion(Regions.US_EAST_1));
         CreateTopicRequest createTopicRequest = new CreateTopicRequest(confMap.get("sns.topic"));

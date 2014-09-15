@@ -36,10 +36,13 @@ public class S3Configuration implements Configuration {
 
     private final Map<String, Map<String, String>> servicesConfMap = new HashMap<>();
 
+    private String serviceName;
+
     @PostConstruct
     private void init() {
         InputStream is = Thread.currentThread().getContextClassLoader().getResourceAsStream("bootstrap.properties");
         fillConfMap(is, localConfMap);
+        serviceName = localConfMap.get("serviceName");
         String bucketName = localConfMap.get("bucketName");
         AmazonS3Client s3Client = new AmazonS3Client();
         S3Object s3Object = s3Client.getObject(bucketName, "conf/global.properties");
@@ -71,7 +74,7 @@ public class S3Configuration implements Configuration {
         }
     }
 
-    public String getServiceValue(String serviceName, String key) {
+    public String getServiceValue(String key) {
         Map<String, String> serviceConfMap = servicesConfMap.get(serviceName);
         return serviceConfMap == null ? null : serviceConfMap.get(key);
     }
@@ -87,8 +90,13 @@ public class S3Configuration implements Configuration {
     }
 
     @Override
-    public Map<String, String> getServiceConfMap(String serviceName) {
+    public Map<String, String> getServiceConfMap() {
         return servicesConfMap.get(serviceName);
+    }
+
+    @Override
+    public String getServiceName() {
+        return serviceName;
     }
 
 }

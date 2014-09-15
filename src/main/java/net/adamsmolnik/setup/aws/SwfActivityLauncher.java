@@ -8,7 +8,6 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import net.adamsmolnik.exceptions.ServiceException;
 import net.adamsmolnik.setup.ActivityLauncher;
-import net.adamsmolnik.setup.ServiceNameResolver;
 import net.adamsmolnik.util.Configuration;
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.services.simpleworkflow.AmazonSimpleWorkflow;
@@ -29,12 +28,9 @@ public class SwfActivityLauncher implements ActivityLauncher {
     @Inject
     private Configuration conf;
 
-    @Inject
-    private ServiceNameResolver snr;
-
     @PostConstruct
     private void init() {
-        Map<String, String> confMap = conf.getServiceConfMap(snr.getServiceName());
+        Map<String, String> confMap = conf.getServiceConfMap();
         ClientConfiguration config = new ClientConfiguration().withSocketTimeout(Integer.valueOf(confMap.get("swf.socketTimeout")));
         AmazonSimpleWorkflow service = new AmazonSimpleWorkflowClient(config);
         service.setEndpoint(confMap.get("swf.endpoint"));
