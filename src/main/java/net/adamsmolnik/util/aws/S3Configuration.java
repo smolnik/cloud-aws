@@ -5,6 +5,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -40,20 +43,35 @@ public class S3Configuration implements Configuration {
 
     @PostConstruct
     private void init() {
-        InputStream is = Thread.currentThread().getContextClassLoader().getResourceAsStream("bootstrap.properties");
-        fillConfMap(is, localConfMap);
+        Path hostConfFile = Paths.get("/home/ec2-user/host/conf.properties");
+        Map<String, String> hostConfMap = new HashMap<>();
+
+        if (Files.exists(hostConfFile) && Files.isRegularFile(hostConfFile)) {
+            try {
+                fillConfMap(Files.newInputStream(hostConfFile), hostConfMap);
+            } catch (IOException e) {
+                throw new ServiceException(e);
+            }
+        }
+        InputStream bootstrapInputStream = Thread.currentThread().getContextClassLoader().getResourceAsStream("bootstrap.properties");
+        fillConfMap(bootstrapInputStream, localConfMap);
+        // host-wide envName parameter wins and overrides the service level one
+        String hostEnvName = hostConfMap.get("environmentName");
+        String localEnvName = localConfMap.get("environmentName");
+        String envName = hostEnvName != null && !hostEnvName.trim().isEmpty() ? hostEnvName : localEnvName;
+
         serviceName = localConfMap.get("serviceName");
-        String bucketName = localConfMap.get("bucketName");
         AmazonS3Client s3Client = new AmazonS3Client();
-        S3Object s3Object = s3Client.getObject(bucketName, "conf/global.properties");
+        S3Object s3Object = s3Client.getObject(envName, "conf/global.properties");
         fillConfMap(s3Object.getObjectContent(), globalConfMap);
+        String bucketName = globalConfMap.get("bucketName");
         ObjectListing s3Objects = s3Client.listObjects(bucketName, "conf/services");
         List<S3ObjectSummary> summaries = s3Objects.getObjectSummaries();;
         for (S3ObjectSummary s3ObjectSummary : summaries) {
             String s3ObjectKey = s3ObjectSummary.getKey();
             String[] ss = s3ObjectKey.split(KEY_DELIMITER);
             String serviceKey = ss[ss.length - 1].split(DOT)[0];
-            S3Object s3ObjectForService = s3Client.getObject(bucketName, s3ObjectKey);
+            S3Object s3ObjectForService = s3Client.getObject(envName, s3ObjectKey);
             if (s3ObjectForService.getObjectMetadata().getContentLength() > 0) {
                 Map<String, String> serviceConfMap = new HashMap<>();
                 fillConfMap(s3ObjectForService.getObjectContent(), serviceConfMap);
@@ -97,6 +115,12 @@ public class S3Configuration implements Configuration {
     @Override
     public String getServiceName() {
         return serviceName;
+    }
+
+    @Override
+    public String toString() {
+        return "S3Configuration [localConfMap=" + localConfMap + ", globalConfMap=" + globalConfMap + ", servicesConfMap=" + servicesConfMap
+                + ", serviceName=" + serviceName + "]";
     }
 
 }
